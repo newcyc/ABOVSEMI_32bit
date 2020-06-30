@@ -1,0 +1,15 @@
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\source\debug_frmwrk.c
+.\objects\debug_frmwrk.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdarg.h
+.\objects\debug_frmwrk.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\include\A31G22x_pcu.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\CMSIS\Include\core_cm0plus.h
+.\objects\debug_frmwrk.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\CMSIS\Include\core_cmInstr.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\CMSIS\Include\core_cmFunc.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\include\aa_types.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\include\A31G22x_uartn.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\include\A31G22x_usart1n.h
+.\objects\debug_frmwrk.o: ..\..\..\..\Drivers\include\debug_frmwrk.h

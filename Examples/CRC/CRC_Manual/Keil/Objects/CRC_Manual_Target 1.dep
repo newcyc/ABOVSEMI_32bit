@@ -1,0 +1,91 @@
+Dependencies for Project 'CRC_Manual', Target 'Target 1': (DO NOT MODIFY !)
+F (..\..\..\..\Core\Device\ABOV\A31G22x\Source\system_A31G22x.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\system_a31g22x.o --omf_browse .\objects\system_a31g22x.crf --depend .\objects\system_a31g22x.d)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+F (..\..\..\..\Drivers\source\A31G22x_crc.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\a31g22x_crc.o --omf_browse .\objects\a31g22x_crc.crf --depend .\objects\a31g22x_crc.d)
+I (..\..\..\..\Drivers\include\A31G22x_scu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_crc.h)(0x5E424DA4)
+F (..\..\..\..\Drivers\source\A31G22x_pcu.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\a31g22x_pcu.o --omf_browse .\objects\a31g22x_pcu.crf --depend .\objects\a31g22x_pcu.d)
+I (..\..\..\..\Drivers\include\A31G22x_pcu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+F (..\..\..\..\Drivers\source\A31G22x_scu.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\a31g22x_scu.o --omf_browse .\objects\a31g22x_scu.crf --depend .\objects\a31g22x_scu.d)
+I (..\..\..\..\Drivers\include\A31G22x_scu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+F (..\..\..\..\Drivers\source\A31G22x_uartn.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\a31g22x_uartn.o --omf_browse .\objects\a31g22x_uartn.crf --depend .\objects\a31g22x_uartn.d)
+I (..\..\..\..\Drivers\include\A31G22x_scu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_uartn.h)(0x5E424DA4)
+F (..\..\..\..\Drivers\source\A31G22x_usart1n.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\a31g22x_usart1n.o --omf_browse .\objects\a31g22x_usart1n.crf --depend .\objects\a31g22x_usart1n.d)
+I (..\..\..\..\Drivers\include\A31G22x_scu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_usart1n.h)(0x5E424DA4)
+F (..\..\..\..\Drivers\source\debug_frmwrk.c)(0x5E424DA3)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\debug_frmwrk.o --omf_browse .\objects\debug_frmwrk.crf --depend .\objects\debug_frmwrk.d)
+I (C:\Keil_v5\ARM\ARMCC\include\stdarg.h)(0x599ECD2A)
+I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x599ECD2C)
+I (..\..\..\..\Drivers\include\A31G22x_pcu.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_uartn.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_usart1n.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\debug_frmwrk.h)(0x5E424DA4)
+F (..\..\..\..\Core\Device\ABOV\A31G22x\Source\ARM\startup_A31G21x.s)(0x5E424DA3)(--cpu Cortex-M0+ --li -g --apcs=interwork -I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0--pd "__UVISION_VERSION SETA 526" --pd "ARMCM0P SETA 1"--list .\listings\startup_a31g21x.lst --xref -o .\objects\startup_a31g21x.o --depend .\objects\startup_a31g21x.d)
+F (..\main.c)(0x5E424DA6)(-c --cpu Cortex-M0+ --li -g -O0 --apcs=interwork -I ..\..\..\..\Core\CMSIS\Include -I ..\..\..\..\Core\Device\ABOV\A31G22x\Include -I ..\..\..\..\Drivers\include-I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include-IC:\Keil_v5\ARM\CMSIS\Include-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0-D__UVISION_VERSION="526" -DARMCM0P -D__NO_EMBEDDED_ASM-o .\objects\main.o --omf_browse .\objects\main.crf --depend .\objects\main.d)
+I (..\..\..\..\Drivers\include\A31g22x_crc.h)(0x5E424DA4)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h)(0x5EB91FFE)
+I (..\..\..\..\Core\CMSIS\Include\core_cm0plus.h)(0x5E424DA3)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599ECD2E)
+I (..\..\..\..\Core\CMSIS\Include\core_cmInstr.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h)(0x5E424DA3)
+I (..\..\..\..\Core\CMSIS\Include\core_cmFunc.h)(0x5E424DA3)
+I (..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h)(0x5E424DA3)
+I (..\..\..\..\Drivers\include\aa_types.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31G22x_pcu.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\A31g22x_scu.h)(0x5E424DA4)
+I (..\..\..\..\Drivers\include\debug_frmwrk.h)(0x5E424DA4)

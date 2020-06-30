@@ -1,0 +1,83 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: •ÏVision V5.26.2.0
+Copyright (C) 2018 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Choi Yuncheol, Abov, LIC=8WS75-GIPBE-91NP9-2H0FY-0CQLW-6FJ2Q
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Essential  Version: 5.26.2.0
+Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 6 (build 750)
+Assembler:       Armasm.exe V5.06 update 6 (build 750)
+Linker/Locator:  ArmLink.exe V5.06 update 6 (build 750)
+Library Manager: ArmAr.exe V5.06 update 6 (build 750)
+Hex Converter:   FromElf.exe V5.06 update 6 (build 750)
+CPU DLL:         SARMCM3.DLL V5.26.2.0
+Dialog DLL:      DARMCM1.DLL V1.19.1.0
+Target DLL:      UL2CM3.DLL V1.161.6.0
+Dialog DLL:      TARMCM1.DLL V1.14.0.0
+ 
+<h2>Project:</h2>
+D:\WORK\010_Project\020_A31G226\010_FW_svn\Trunk\Examples\CRC\CRC_Manual\Keil\CRC_Manual.uvprojx
+Project File Date:  05/12/2020
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+compiling system_A31G22x.c...
+compiling A31G22x_pcu.c...
+..\..\..\..\Drivers\source\A31G22x_pcu.c(249): error:  #136: struct "<unnamed>"  has no field "ICOMIR"
+  	Reg32 = PCU2->ICOMIR;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(252): error:  #136: struct "<unnamed>"  has no field "ICOMIR"
+  	PCU2->ICOMIR = Reg32;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(265): error:  #136: struct "<unnamed>"  has no field "ICOMPEN"
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_ENABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(265): error:  #20: identifier "PCU2_ICOMPEN_ICOMENKEY_Pos" is undefined
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_ENABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(265): error:  #20: identifier "PCU2_ICOMPEN_ICOMENKEY_Msk" is undefined
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_ENABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(267): error:  #136: struct "<unnamed>"  has no field "ICOMPEN"
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_DISABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(267): error:  #20: identifier "PCU2_ICOMPEN_ICOMENKEY_Pos" is undefined
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_DISABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c(267): error:  #20: identifier "PCU2_ICOMPEN_ICOMENKEY_Msk" is undefined
+  		PCU2->ICOMPEN = (PCU2_ICOMKEY_ICOMENKEY_DISABLE << PCU2_ICOMPEN_ICOMENKEY_Pos) & PCU2_ICOMPEN_ICOMENKEY_Msk;
+..\..\..\..\Drivers\source\A31G22x_pcu.c: 0 warnings, 8 errors
+compiling A31G22x_scu.c...
+..\..\..\..\Drivers\source\A31G22x_scu.c(632): error:  #20: identifier "SCU_MCCR5_TSREFCLKSEL_Msk" is undefined
+  	Reg32 &= ~(SCU_MCCR5_TSREFCLKSEL_Msk | SCU_MCCR5_TSSENSECLKSEL_Msk | SCU_MCCR5_TSSLSITSEN_Msk);
+..\..\..\..\Drivers\source\A31G22x_scu.c(632): error:  #20: identifier "SCU_MCCR5_TSSENSECLKSEL_Msk" is undefined
+  	Reg32 &= ~(SCU_MCCR5_TSREFCLKSEL_Msk | SCU_MCCR5_TSSENSECLKSEL_Msk | SCU_MCCR5_TSSLSITSEN_Msk);
+..\..\..\..\Drivers\source\A31G22x_scu.c(634): error:  #20: identifier "SCU_MCCR5_TSREFCLKSEL_Pos" is undefined
+  		| ((ReferenceClock << SCU_MCCR5_TSREFCLKSEL_Pos) & SCU_MCCR5_TSREFCLKSEL_Msk)
+..\..\..\..\Drivers\source\A31G22x_scu.c(635): error:  #20: identifier "SCU_MCCR5_TSSENSECLKSEL_Pos" is undefined
+  		| ((SensingClock << SCU_MCCR5_TSSENSECLKSEL_Pos) & SCU_MCCR5_TSSENSECLKSEL_Msk)
+..\..\..\..\Drivers\source\A31G22x_scu.c: 0 warnings, 4 errors
+compiling A31G22x_crc.c...
+compiling A31G22x_uartn.c...
+compiling debug_frmwrk.c...
+compiling A31G22x_usart1n.c...
+assembling startup_A31G21x.s...
+compiling main.c...
+".\Objects\CRC_Manual.axf" - 12 Error(s), 0 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.4.0.pack
+                ARM.CMSIS.5.4.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_Target_1
+  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\Device\ARM\ARMCM0plus\Include
+
+<h2>Collection of Component Files used:</h2>
+Target not created.
+Build Time Elapsed:  00:00:02
+</pre>
+</body>
+</html>

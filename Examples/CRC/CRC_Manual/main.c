@@ -1,0 +1,1169 @@
+/***************************************************************************//**
+* @file     main.c
+* @brief    An example of ADC using interrupt mode on A31G22x
+* @author   AE Team, ABOV Semiconductor Co., Ltd.
+* @version  V0.0.1
+* @date     30. Jul. 2018
+*
+* Copyright(C) 2018, ABOV Semiconductor
+* All rights reserved.
+*
+*
+********************************************************************************
+* DISCLAIMER 
+*
+* THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+* TIME. AS A RESULT, ABOV SEMICONDUCTOR DISCLAIMS ALL LIABILITIES FROM ANY
+* DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+* FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+* CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+*
+*******************************************************************************/
+
+/*******************************************************************************
+* Included File
+*******************************************************************************/
+#include "A31g22x_crc.h"
+#include "A31G22x_pcu.h"
+#include "A31g22x_scu.h"
+
+#include "debug_frmwrk.h"
+
+
+/*******************************************************************************
+* Pre-processor Definition & Macro
+*******************************************************************************/
+//-------------------------
+#define USED_CLKO
+//-------------------------
+#define USED_HSI
+//#define USED_LSI
+//#define USED_MOSC
+//#define USED_SOSC
+//#define USED_MOSCPLL
+//#define USED_HSIPLL
+
+#define MAX_TEST_STRING				(7)
+#define MAX_BUFFER_LENGTH			(10)
+
+#define ASCII_CODE_BS				(0x08) // Back space
+#define ASCII_CODE_LF				(0x0A) // '\n'
+#define ASCII_CODE_CR				(0x0D) // '\r'
+#define ASCII_CODE_SPACE			(0x20) // Space
+#define ASCII_CODE_DEL				(0x7F) // Delete
+
+
+
+/*******************************************************************************
+* Private Typedef
+*******************************************************************************/
+
+
+/*******************************************************************************
+* Private Variable
+*******************************************************************************/
+static const uint8_t TEST_MENU[] =
+"************************************************\r\n"
+" CRC demo\r\n"
+"\t - MCU: A31G22x\r\n"
+"\t - Core: ARM Cortex-M0+\r\n"
+"\t - Communicate via: USART10 - 38400 bps\r\n"
+"\t   0. CRC32 \n\r"
+"\t   1. CRC16 \n\r"
+"\t   2. CRC8 \n\r"
+"\t   3. CRC7 \n\r"
+"************************************************\r\n";
+static const uint8_t PROMPT_STRING[] =
+"A31G22x> ";
+static const uint8_t INVALID_STRING[] =
+"Invaild";
+static const uint8_t TEST_STRING[MAX_TEST_STRING] = {
+	'0', '1', '2', '3', '4', '5', '6'
+};
+
+static Bool ReverseInput;
+static Bool ReverseOutput;
+static uint32_t CRC_XOR;
+static uint32_t CRC_Mask;
+static uint32_t CRC_Order;
+static uint32_t CRC_HighBit;
+static uint32_t CRC_InitValue;
+static uint32_t CRC_Polynominal;
+
+static uint32_t CRC_Table[256];
+
+
+/*******************************************************************************
+* Private Function Prototype
+*******************************************************************************/
+static uint32_t Main_ReverseData(uint32_t Data, uint32_t BitNum);
+static uint32_t Main_UpdateCRCInit(uint32_t Init);
+static void Main_GenerateCRCTable(void);
+static uint32_t Main_CalculateByTable(const uint8_t *pData, uint32_t Length);
+static uint32_t Main_CalculateByBit(const uint8_t *pData, uint32_t Length);
+static uint32_t Main_GetString(uint8_t *pBuffer, uint32_t MaxLength);
+static void Main_PrintMenu(void);
+static void Main_MainLoop(void);
+static void Main_InitializeClock(void);
+static void Main_InitializePCU(void);
+
+
+/*******************************************************************************
+* Public Function
+*******************************************************************************/
+
+/*******************************************************************************
+* @brief      Main function
+* @param      None
+* @return     None
+*******************************************************************************/
+int main(void)
+{
+	SystemInit();
+	Main_InitializePCU();
+	Main_InitializeClock();
+
+	DEBUG_Init(DEBUG_INTERFACE_PERI);
+
+	Main_MainLoop();
+
+	return (0);
+}
+
+/*******************************************************************************
+* Private Function
+*******************************************************************************/
+
+/*******************************************************************************
+* @brief      Revesre data for CRC
+* @param      Data : 32-bit data
+* @param      BitNum : Bit number of ''Data'
+* @return     Reversed data
+*******************************************************************************/
+static uint32_t Main_ReverseData(uint32_t Data, uint32_t BitNum)
+{
+	uint32_t i;
+	uint32_t j;
+	uint32_t ReverseData;
+
+	j = 1;
+	ReverseData = 0;
+	for (i = 0x1UL << (BitNum - 1); i != 0; i >>= 1) {
+		if (Data & i) {
+			ReverseData |= j;
+		}
+		j <<= 1;
+	}
+
+	return (ReverseData);
+}
+
+/*******************************************************************************
+* @brief      Update CRC Init value (direct alogrithm)
+* @param      Init : CRC init value
+* @return     New CRC init value
+*******************************************************************************/
+static uint32_t Main_UpdateCRCInit(uint32_t Init)
+{
+	uint32_t i;
+	uint32_t Bit;
+	uint32_t Value;
+
+	Value = Init;
+	for (i = 0; i < CRC_Order; i++) {
+		Bit = Value & 1;
+		if (Bit) {
+			Value ^= CRC_Polynominal;
+		}
+
+		Value >>= 1;
+
+		if (Bit) {
+			Value |= CRC_HighBit;
+		}
+	}
+
+	return Value;
+}
+
+/*******************************************************************************
+* @brief      Generate CRC Table
+* @param      None
+* @return     None
+*******************************************************************************/
+static void Main_GenerateCRCTable(void)
+{
+	uint32_t i;
+	uint32_t j;
+	uint32_t Bit;
+	uint32_t Value;
+
+	for (i = 0; i < 256; i++) {
+		Value = i;
+		if (ReverseInput == TRUE) {
+			Value = Main_ReverseData(Value, 8);
+		}
+		Value <<= (CRC_Order - 8);
+
+		for (j = 0; j < 8; j++) {
+			Bit = Value & CRC_HighBit;
+			Value <<= 1;
+			if (Bit) {
+				Value ^= CRC_Polynominal;
+			}
+		}			
+
+		if (ReverseInput == TRUE) {
+			Value = Main_ReverseData(Value, CRC_Order);
+		}
+		Value &= CRC_Mask;
+		CRC_Table[i] = Value;
+	}
+}
+
+/*******************************************************************************
+* @brief      Calculate CRC by CRC Table
+* @param      pData : pointer of Data
+* @param      Length : Length of Data
+* @return     Calculated value
+*******************************************************************************/
+static uint32_t Main_CalculateByTable(const uint8_t *pData, uint32_t Length)
+{
+	// suited for CRC_Polynominal orders between 8, 16, 32
+	uint32_t Value;
+
+	// direct algorithm
+	Value = Main_UpdateCRCInit(CRC_InitValue);
+	if (ReverseInput == TRUE) {
+		Value = Main_ReverseData(Value, CRC_Order);
+
+		while (Length--) {
+			Value = ((Value >> 8) | (*pData++ << (CRC_Order - 8))) ^ CRC_Table[Value & 0xFF];
+		}
+
+		while (++Length < (CRC_Order / 8)) {
+			Value = (Value >> 8) ^ CRC_Table[Value & 0xFF];
+		}
+	} else {
+		while (Length--) { 
+			Value = ((Value << 8) | *pData++) ^ CRC_Table[(Value >> (CRC_Order - 8)) & 0xFF];
+		}
+
+		while (++Length < (CRC_Order / 8)) {
+			Value = (Value << 8) ^ CRC_Table[ (Value >> (CRC_Order - 8))  & 0xFF];
+		}
+	}
+
+	if (ReverseOutput ^ ReverseInput) {
+		Value = Main_ReverseData(Value, CRC_Order);
+	}
+
+	Value ^= CRC_XOR;
+	Value &= CRC_Mask;
+
+	return Value;
+}
+
+/*******************************************************************************
+* @brief      Calculate CRC by CRC bit
+* @param      pData : pointer of Data
+* @param      Length : Length of Data
+* @return     Calculated value
+*******************************************************************************/
+static uint32_t Main_CalculateByBit(const uint8_t *pData, uint32_t Length)
+{
+	// suited for 7 crc order
+	uint32_t i;
+	uint32_t j;
+	uint32_t Bit;
+	uint32_t Data;
+	uint32_t Value;
+
+	// direct algorithm
+	Value = Main_UpdateCRCInit(CRC_InitValue);
+	for (i = 0; i < Length; i++) {
+		Data = (uint32_t)(*pData++);
+		if (ReverseInput == TRUE) {
+			Data = Main_ReverseData(Data, 8);
+		}
+
+		for (j = 0x80; j != 0; j >>= 1) {
+			Bit = Value & CRC_HighBit;
+			Value <<= 1;
+			if (Data & j) {
+				Value |= 1;
+			}
+			if (Bit) {
+				Value ^= CRC_Polynominal;
+			}
+		}
+	}
+
+	for (i = 0; i < CRC_Order; i++) {
+		Bit = Value & CRC_HighBit;
+		Value <<= 1;
+		if (Bit) {
+			Value ^= CRC_Polynominal;
+		}
+	}
+
+	if (ReverseOutput) {
+		Value = Main_ReverseData(Value, CRC_Order);
+	}
+
+	Value ^= CRC_XOR;
+	Value &= CRC_Mask;
+
+	return Value;
+}
+
+
+/*******************************************************************************
+* @brief      Get String
+* @param      pBuffer : Pointer of string Buffer
+* @param      MaxLength : Max length of buffer
+* @return     String lenth
+*******************************************************************************/
+static uint32_t Main_GetString(uint8_t *pBuffer, uint32_t MaxLength)
+{
+	uint8_t InputData;
+	uint32_t InputCount;
+	static uint8_t PreInputData = 0x00;
+
+	InputCount = 0;
+	while (1) {
+		InputData = _DG;
+		if((InputData >= 0x20) && (InputData <= 0x7E)) {
+			PreInputData = InputData;
+			if (InputCount < MaxLength) {
+				_DBC(InputData);
+				pBuffer[InputCount++] = InputData;
+			}
+		} else if ((InputData == ASCII_CODE_LF) || (InputData == ASCII_CODE_CR)) {
+			if (((InputData == ASCII_CODE_LF) && (PreInputData != ASCII_CODE_CR))
+				|| ((InputData == ASCII_CODE_CR) && (PreInputData != ASCII_CODE_LF))) {
+				_DBG("\r\n");
+				PreInputData = InputData;
+				return InputCount;
+			} else {
+				PreInputData = InputData;
+			}
+		} else if ((InputData == ASCII_CODE_DEL) || (InputData == ASCII_CODE_BS)) {
+			PreInputData = InputData;
+			if (InputCount) {
+				_DBC(ASCII_CODE_BS);
+				_DBC(ASCII_CODE_SPACE);
+				_DBC(ASCII_CODE_BS);
+				InputCount--;
+			}
+		} else {
+			PreInputData = InputData;
+			InputCount = 0;
+			break;
+		}
+	}
+
+	return InputCount;
+}
+
+/*******************************************************************************
+* @brief      Print test menu
+* @param      None
+* @return     None
+*******************************************************************************/
+static void Main_PrintMenu(void)
+{
+	_DBG(TEST_MENU);
+}
+
+/*******************************************************************************
+* @brief      Main loop
+* @param      None
+* @return     None
+*******************************************************************************/
+static void Main_MainLoop(void)
+{
+	Bool ValidCommand;
+	uint32_t i;
+	uint32_t Result;
+	uint32_t StringLength;
+	CRC_CFG_Type CRC_Config;
+	uint8_t StringBuffer[MAX_BUFFER_LENGTH];
+
+	Main_PrintMenu();
+
+	CRC_Config.InverseOutput = DISABLE;
+	CRC_Config.ReverseOutput = ENABLE;
+	CRC_Config.FirstBitInput = CRC_FIRST_BIT_LSB;
+	CRC_Config.DMADoneInterrupt = DISABLE;
+
+	if (CRC_Config.InverseOutput == ENABLE) {
+		CRC_XOR = 0xFFFFFFFFUL;
+	} else {
+		CRC_XOR = 0;
+	}
+
+	if (CRC_Config.ReverseOutput == ENABLE) {
+		ReverseOutput = TRUE;
+	} else {
+		ReverseOutput = FALSE;
+	}
+
+	if (CRC_Config.FirstBitInput == CRC_FIRST_BIT_LSB) {
+		ReverseInput = TRUE;
+	} else {
+		ReverseInput = FALSE;
+	}
+
+	_DBG(PROMPT_STRING);
+	
+	while (1) {
+		StringLength = Main_GetString(StringBuffer, MAX_BUFFER_LENGTH);
+		if (StringLength == 1) {
+			ValidCommand = TRUE;
+			switch (StringBuffer[0]) {
+				case '0' :
+					CRC_Config.Polynomial = CRC_POLY_CRC32;
+					CRC_Mask = 0xFFFFFFFFUL;
+					CRC_Order = 32;
+					CRC_HighBit = 0x80000000UL;
+					CRC_InitValue = 0xFFFFFFFFUL;
+					CRC_Polynominal = 0x04C11DB7;
+					break;
+
+				case '1' :
+					CRC_Config.Polynomial = CRC_POLY_CRC16;
+					CRC_Mask = 0x0000FFFFUL;
+					CRC_Order = 16;
+					CRC_HighBit = 0x00008000UL;
+					CRC_InitValue = 0;
+					CRC_Polynominal = 0x00008005UL;
+					break;
+
+				case '2' :
+					CRC_Config.Polynomial = CRC_POLY_CRC8;
+					CRC_Mask = 0x000000FFUL;
+					CRC_Order = 8;
+					CRC_HighBit = 0x00000080UL;
+					CRC_InitValue = 0;
+					CRC_Polynominal = 0x00000007UL;
+					break;
+
+				case '3' :
+					CRC_Config.Polynomial = CRC_POLY_CRC7;
+					CRC_Mask = 0x0000007FUL;
+					CRC_Order = 7;
+					CRC_HighBit = 0x00000040UL;
+					CRC_InitValue = 0;
+					CRC_Polynominal = 0x00000009UL;
+					break;
+
+				default :
+					ValidCommand = FALSE;
+					_DBG_(INVALID_STRING);
+					_DBG(PROMPT_STRING);
+					break;
+			}
+		} else {
+			ValidCommand = FALSE;
+			_DBG_(INVALID_STRING);
+			_DBG(PROMPT_STRING);
+		}
+
+		if (ValidCommand == TRUE) {
+			// Calcuate by S/W
+			if (CRC_Config.Polynomial == CRC_POLY_CRC7) {
+				Result = Main_CalculateByBit(TEST_STRING, MAX_TEST_STRING);
+			} else {
+				Main_GenerateCRCTable();
+				Result = Main_CalculateByTable(TEST_STRING, MAX_TEST_STRING);
+			}
+
+			_DBG("[SW] CRCDATA = ");
+			_DBH32(Result);
+			_DBG("\r\n");
+
+			// Calcuate by H/W
+			CRC_Init(&CRC_Config);
+			CRC_SetInitVal(CRC_InitValue);
+			CRC_ApplyInitVal();
+
+			for (i = 0; i < MAX_TEST_STRING; i++) {
+				CRC_SetInputData8(TEST_STRING[i]);
+			}
+			Result = CRC_GetOutputData();
+
+			_DBG("[HW] CRCDATA = ");
+			_DBH32(Result);
+			_DBG("\r\n");
+			_DBG(PROMPT_STRING);
+		}
+	}
+}
+
+/*******************************************************************************
+* @brief      Initialize default clock
+* @param      None
+* @return     None
+*******************************************************************************/
+static void Main_InitializeClock(void)
+{
+	uint32_t i;
+
+//	CLKO function setting. check PORT setting (PF4).
+
+#ifdef USED_CLKO
+	SCU_SetCOR(4,ENABLE); //    /10
+
+	PCU_ConfigureFunction((PORT_Type *)PF, 4, PCU_ALT_FUNCTION_1);
+	PCU_ConfigureDirection((PORT_Type *)PF, 4, PCU_MODE_ALT_FUNC);
+#else
+	SCU_SetCOR(4,DISABLE);
+#endif
+
+	SCU->CMR&=~(1<<7); //mclk monitoring disable
+	
+#ifdef USED_LSI			//500khz
+	SCU_SetLSI(LSI_EN); //LSI_EN_DIV2, LSI_EN_DIV4
+	SystemCoreClock=500000; //500khz
+	SystemPeriClock=500000; //500khz	
+	
+	for (i=0;i<10;i++);	
+	
+	SCU_ChangeSysClk(SCCR_LSI);
+#endif 
+	
+#ifdef USED_SOSC  //32.768khz
+	SCU_SetLSE(LSE_EN);
+	SystemCoreClock=32768; //32.768khz
+	SystemPeriClock=32768; //32.768khz	
+
+	for (i=0;i<100;i++);	
+
+// wait for SOSC stable	
+	SCU_WaitForLSEStartUp();
+	SCU_ChangeSysClk(SCCR_LSE);
+#endif 	
+
+#ifdef USED_HSI // 32MHz
+	SCU_SetHSI(HSI_EN);
+	SystemCoreClock = 32000000; // 32MHz
+	SystemPeriClock = 32000000; // 32MHz
+
+	for (i = 0; i < 10; i++);
+
+	SCU_ChangeSysClk(SCCR_HSI);
+#endif
+
+#ifdef USED_MOSC	//xMHz
+	SCU_SetHSE(HSE_EN);
+	SystemCoreClock=8000000; //xMHz
+	SystemPeriClock=8000000; //xMHz	
+
+	for (i=0;i<100;i++);	
+
+	SCU_WaitForHSEStartUp();
+	SCU_ChangeSysClk(SCCR_HSE);
+#endif
+
+
+#ifdef USED_MOSCPLL
+// PLL setting 
+//    FIN=PLLINCLK/(R+1)                                             ; R: Pre Divider   
+//    FOUT=(FIN*(N1+1)*(D+1))  / ((N2+1)*(P+1))          ; N1: Post Divider1, N2:Post Divider2, P:Output Divider,      
+//             = FVCO *(D+1)                                             ; D:Frequency Doubler
+//
+//ex)    FIN=PLLINCLK/(R+1) = 8M/(3+1) = 2M                               ; R:3, PLLINCLK:8MHz(MOSC)
+//         FOUT=(2M*(47+1)*(0+1)) / ((1+1)*(0+1) = 48MHz              ; N1:47, D:0, N2:1, P:0
+//
+	if (SCU_SetPLLandWaitForPLLStartUp(ENABLE,  
+		PLLCON_BYPASS_PLL,    //PLLCON_BYPASS_FIN:0, PLLCON_BYPASS_PLL:1
+		0,                                    //0:FOUT==VCO, 1:FOUT==2xVCO,  D=0
+//		3,                                    //PREDIV, R=3
+		1,                                    //PREDIV, R=1
+		47,                                  //POSTDIV1, N1=47  
+		1,                                    //POSTDIV2, N2=1
+		0)==ERROR)                    //OUTDIV P=0
+	{
+		while(1);
+	}
+
+//	EOSC -->  EOSCPLL
+	SCU_ChangeSysClk(SCCR_HSE_PLL);
+	
+	SystemCoreClock=48000000; 
+	SystemPeriClock=48000000; 
+#endif
+
+	
+#ifdef USED_HSIPLL
+// PLL setting 
+//    FIN=PLLINCLK/(R+1)                                             ; R: Pre Divider   
+//    FOUT=(FIN*(N1+1)*(D+1))  / ((N2+1)*(P+1))          ; N1: Post Divider1, N2:Post Divider2, P:Output Divider,      
+//             = FVCO *(D+1)                                             ; D:Frequency Doubler
+//
+//ex)    FIN=PLLINCLK/(R+1) = 8M/(3+1) = 2M                               ; R:3, PLLINCLK:8MHz(MOSC)
+//         FOUT=(2M*(47+1)*(0+1)) / ((1+1)*(0+1) = 48MHz              ; N1:47, D:0, N2:1, P:0
+//
+	if (SCU_SetPLLandWaitForPLLStartUp(ENABLE,  
+		PLLCON_BYPASS_PLL,    //PLLCON_BYPASS_FIN:0, PLLCON_BYPASS_PLL:1
+		0,                                    //0:FOUT==VCO, 1:FOUT==2xVCO,  D=0
+//		3,                                    //PREDIV, R=3
+		1,                                    //PREDIV, R=1
+		47,                                  //POSTDIV1, N1=47  
+		1,                                    //POSTDIV2, N2=1
+		0)==ERROR)                    //OUTDIV P=0
+	{
+		while(1);
+	}
+
+//	EOSC -->  EOSCPLL
+	SCU_ChangeSysClk(SCCR_HSI_PLL);
+	
+	SystemCoreClock=48000000; 
+	SystemPeriClock=48000000; 
+#endif
+
+	SCU->CMR|=(1<<7); //mclk monitoring enable
+
+// wait setting order 1. default wait setting -> 2. clock change -> 3. adjust wait setting
+//// flash memory controller
+	CFMC->MR = 0x81;       // after changing 0x81 -> 0x28 in MR reg, flash access timing will be able to be set.
+	CFMC->MR = 0x28;       // enter flash access timing changing mode
+//	CFMC->CFG = (0x7858<<16) | (0<<8);  //flash access cycles 	20
+//	CFMC->CFG = (0x7858<<16) | (1<<8);  //flash access cycles 	40
+	CFMC->CFG = (0x7858<<16) | (2<<8);  //flash access cycles 	60		
+//	CFMC->CFG = (0x7858<<16) | (3<<8);  //flash access cycles 		
+	                              // flash access time cannot overflow 20MHz.
+	                              // ex) if MCLK=48MHz, 
+	                              //       48/1 = 48 (can't set no wait)
+	                              //       48/2 = 24 (1 wait is not ok)
+	                              //       48/3 = 16 (2 wait is ok)								  
+	                              // so, 2 wait is possible.
+	CFMC->MR = 0;	      // exit flash access timing --> normal mode				
+}
+
+/*******************************************************************************
+* @brief      Initialize PCU(IO Port)
+* @param      None
+* @return     None
+*******************************************************************************/
+static void Main_InitializePCU(void)
+{
+	// Peripheral Enable Register 1  0:Disable, 1:Enable	
+	SCU->PER1 |= 0x00UL 
+			| (0x01UL << SCU_PER1_GPIOF_Pos) // GPIO F
+			| (0x01UL << SCU_PER1_GPIOE_Pos) // GPIO E
+			| (0x01UL << SCU_PER1_GPIOD_Pos) // GPIO D
+			| (0x01UL << SCU_PER1_GPIOC_Pos) // GPIO C
+			| (0x01UL << SCU_PER1_GPIOB_Pos) // GPIO B
+			| (0x01UL << SCU_PER1_GPIOA_Pos) // GPIO A
+			;
+	// Peripheral Clock Enable Register 1 0:Disable, 1:Enable	
+	SCU->PCER1 |= 0x00UL
+			| (0x01UL << SCU_PCER1_GPIOF_Pos) // GPIO F
+			| (0x01UL << SCU_PCER1_GPIOE_Pos) // GPIO E
+			| (0x01UL << SCU_PCER1_GPIOD_Pos) // GPIO D
+			| (0x01UL << SCU_PCER1_GPIOC_Pos) // GPIO C
+			| (0x01UL << SCU_PCER1_GPIOB_Pos) // GPIO B
+			| (0x01UL << SCU_PCER1_GPIOA_Pos) // GPIO A
+			;
+
+	PORT_ACCESS_EN();  // enable writing permittion of ALL PCU register
+
+	//--------------------------------------------------------------
+	//	PORT INIT
+	//		PA, PB, PC, PD, PE, PF
+	//--------------------------------------------------------------
+	// PORT - A
+	PA->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE11_Pos) // P11
+			| (0x01UL << PORT_MOD_MODE10_Pos) // P10
+			| (0x01UL << PORT_MOD_MODE9_Pos)  // P9
+			| (0x01UL << PORT_MOD_MODE8_Pos)  // P8
+			| (0x01UL << PORT_MOD_MODE7_Pos)  // P7
+			| (0x01UL << PORT_MOD_MODE6_Pos)  // P6
+			| (0x01UL << PORT_MOD_MODE5_Pos)  // P5
+			| (0x01UL << PORT_MOD_MODE4_Pos)  // P4
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PA->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP11_Pos) // P11
+			| (0x00UL << PORT_TYP_TYP10_Pos) // P10
+			| (0x00UL << PORT_TYP_TYP9_Pos)  // P9
+			| (0x00UL << PORT_TYP_TYP8_Pos)  // P8
+			| (0x00UL << PORT_TYP_TYP7_Pos)  // P7
+			| (0x00UL << PORT_TYP_TYP6_Pos)  // P6
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PA->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR7_Pos)  // P7  - 0 :               , 1 :               , 2 :               , 3 : AN7/CREF0     , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR6_Pos)  // P6  - 0 :               , 1 : T11O          , 2 : T11C          , 3 : AN6/CREF1/DAO , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 : T12O          , 2 : T12C          , 3 : AN5/CP1A      , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 :               , 2 :               , 3 : AN4/CP1B      , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 :               , 2 :               , 3 : AN3/CP1C      , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 : EC12          , 2 :               , 3 : AN2/CP0       , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : SCL1          , 2 :               , 3 : AN1           , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : SDA1          , 2 :               , 3 : AN0           , 4 :               
+			;
+
+	PA->AFSR2 = 0x00UL
+			| (0x00UL << PORT_AFSR2_AFSR11_Pos) // P11 - 0 :               , 1 :               , 2 :               , 3 : AN14          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR10_Pos) // P10 - 0 :               , 1 :               , 2 :               , 3 : AN13          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR9_Pos)  // P9  - 0 :               , 1 :               , 2 :               , 3 : AN12          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR8_Pos)  // P8  - 0 :               , 1 :               , 2 :               , 3 : AN11          , 4 :               
+			;
+
+	PA->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD11_Pos) // P11
+			| (0x00UL << PORT_PUPD_PUPD10_Pos) // P10
+			| (0x00UL << PORT_PUPD_PUPD9_Pos)  // P9
+			| (0x00UL << PORT_PUPD_PUPD8_Pos)  // P8
+			| (0x00UL << PORT_PUPD_PUPD7_Pos)  // P7
+			| (0x00UL << PORT_PUPD_PUPD6_Pos)  // P6
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PA->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR11_Pos) // P11
+			| (0x00UL << PORT_OUTDR_OUTDR10_Pos) // P10
+			| (0x00UL << PORT_OUTDR_OUTDR9_Pos)  // P9
+			| (0x00UL << PORT_OUTDR_OUTDR8_Pos)  // P8
+			| (0x00UL << PORT_OUTDR_OUTDR7_Pos)  // P7
+			| (0x00UL << PORT_OUTDR_OUTDR6_Pos)  // P6
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	// PORT - B
+	PB->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE15_Pos) // P15
+			| (0x01UL << PORT_MOD_MODE14_Pos) // P14
+			| (0x01UL << PORT_MOD_MODE13_Pos) // P13
+			| (0x01UL << PORT_MOD_MODE12_Pos) // P12
+			| (0x01UL << PORT_MOD_MODE11_Pos) // P11
+			| (0x01UL << PORT_MOD_MODE10_Pos) // P10
+			| (0x01UL << PORT_MOD_MODE9_Pos)  // P9
+			| (0x01UL << PORT_MOD_MODE8_Pos)  // P8
+			| (0x01UL << PORT_MOD_MODE7_Pos)  // P7
+			| (0x01UL << PORT_MOD_MODE6_Pos)  // P6
+			| (0x02UL << PORT_MOD_MODE5_Pos)  // P5  - Alternative function mode (SWDIO)
+			| (0x02UL << PORT_MOD_MODE4_Pos)  // P4  - Alternative function mode (SWCLK)
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PB->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP15_Pos) // P15
+			| (0x00UL << PORT_TYP_TYP14_Pos) // P14
+			| (0x00UL << PORT_TYP_TYP13_Pos) // P13
+			| (0x00UL << PORT_TYP_TYP12_Pos) // P12
+			| (0x00UL << PORT_TYP_TYP11_Pos) // P11
+			| (0x00UL << PORT_TYP_TYP10_Pos) // P10
+			| (0x00UL << PORT_TYP_TYP9_Pos)  // P9
+			| (0x00UL << PORT_TYP_TYP8_Pos)  // P8
+			| (0x00UL << PORT_TYP_TYP7_Pos)  // P7
+			| (0x00UL << PORT_TYP_TYP6_Pos)  // P6
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PB->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR7_Pos)  // P7  - 0 :               , 1 : RXD1          , 2 :               , 3 : AN16          , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR6_Pos)  // P6  - 0 :               , 1 : TXD1          , 2 : EC11          , 3 : AN15          , 4 :               
+			| (0x02UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 : RXD0          , 2 : SWDIO         , 3 :               , 4 :               
+			| (0x02UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 : TXD0          , 2 : SWCLK         , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 : BOOT          , 2 : SS10/SS20     , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 :               , 2 : SCK10/SCK20   , 3 : AN10          , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : RXD10         , 2 : MISO10/MISO20 , 3 : AN9           , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : TXD10         , 2 : MOSI10/MOSI20 , 3 : AN8           , 4 :               
+			;
+
+	PB->AFSR2 = 0x00UL
+			| (0x00UL << PORT_AFSR2_AFSR15_Pos) // P15 - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR14_Pos) // P14 - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR13_Pos) // P13 - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR12_Pos) // P12 - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR11_Pos) // P11 - 0 :               , 1 : T15C          , 2 : EC16          , 3 : T15O          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR10_Pos) // P10 - 0 :               , 1 : T16C          , 2 : EC15          , 3 : T16O          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR9_Pos)  // P9  - 0 :               , 1 : T16O          , 2 : T16C          , 3 : EC15          , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR8_Pos)  // P8  - 0 :               , 1 : T15O          , 2 : T15C          , 3 : EC16          , 4 :               
+			;
+
+	PB->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD15_Pos) // P15
+			| (0x00UL << PORT_PUPD_PUPD14_Pos) // P14
+			| (0x00UL << PORT_PUPD_PUPD13_Pos) // P13
+			| (0x00UL << PORT_PUPD_PUPD12_Pos) // P12
+			| (0x00UL << PORT_PUPD_PUPD11_Pos) // P11
+			| (0x00UL << PORT_PUPD_PUPD10_Pos) // P10
+			| (0x00UL << PORT_PUPD_PUPD9_Pos)  // P9
+			| (0x00UL << PORT_PUPD_PUPD8_Pos)  // P8
+			| (0x00UL << PORT_PUPD_PUPD7_Pos)  // P7
+			| (0x00UL << PORT_PUPD_PUPD6_Pos)  // P6
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PB->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR15_Pos) // P15
+			| (0x00UL << PORT_OUTDR_OUTDR14_Pos) // P14
+			| (0x00UL << PORT_OUTDR_OUTDR13_Pos) // P13
+			| (0x00UL << PORT_OUTDR_OUTDR12_Pos) // P12
+			| (0x00UL << PORT_OUTDR_OUTDR11_Pos) // P11
+			| (0x00UL << PORT_OUTDR_OUTDR10_Pos) // P10
+			| (0x00UL << PORT_OUTDR_OUTDR9_Pos)  // P9
+			| (0x00UL << PORT_OUTDR_OUTDR8_Pos)  // P8
+			| (0x00UL << PORT_OUTDR_OUTDR7_Pos)  // P7
+			| (0x00UL << PORT_OUTDR_OUTDR6_Pos)  // P6
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	// PORT - C
+	PC->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE12_Pos) // P12
+			| (0x01UL << PORT_MOD_MODE11_Pos) // P11
+			| (0x01UL << PORT_MOD_MODE10_Pos) // P10
+			| (0x01UL << PORT_MOD_MODE9_Pos)  // P9
+			| (0x01UL << PORT_MOD_MODE8_Pos)  // P8
+			| (0x01UL << PORT_MOD_MODE7_Pos)  // P7
+			| (0x01UL << PORT_MOD_MODE6_Pos)  // P6
+			| (0x01UL << PORT_MOD_MODE5_Pos)  // P5
+			| (0x01UL << PORT_MOD_MODE4_Pos)  // P4
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PC->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP12_Pos) // P12
+			| (0x00UL << PORT_TYP_TYP11_Pos) // P11
+			| (0x00UL << PORT_TYP_TYP10_Pos) // P10
+			| (0x00UL << PORT_TYP_TYP9_Pos)  // P9
+			| (0x00UL << PORT_TYP_TYP8_Pos)  // P8
+			| (0x00UL << PORT_TYP_TYP7_Pos)  // P7
+			| (0x00UL << PORT_TYP_TYP6_Pos)  // P6
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PC->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR7_Pos)  // P7  - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR6_Pos)  // P6  - 0 :               , 1 : SCL2          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 : SDA2          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 :               , 2 : SCK20         , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 : EC21          , 2 : MISO20        , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 : EC20          , 2 : MOSI20        , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : T21O          , 2 : T21C          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : T20O          , 2 : T20C          , 3 : AN17          , 4 :               
+			;
+
+	PC->AFSR2 = 0x00UL
+			| (0x00UL << PORT_AFSR2_AFSR12_Pos) // P12 - 0 :               , 1 : EC11          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR11_Pos) // P11 - 0 :               , 1 : EC10          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR10_Pos) // P10 - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR9_Pos)  // P9  - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR8_Pos)  // P8  - 0 :               , 1 :               , 2 :               , 3 :               , 4 :               
+			;
+
+	PC->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD12_Pos) // P12
+			| (0x00UL << PORT_PUPD_PUPD11_Pos) // P11
+			| (0x00UL << PORT_PUPD_PUPD10_Pos) // P10
+			| (0x00UL << PORT_PUPD_PUPD9_Pos)  // P9
+			| (0x00UL << PORT_PUPD_PUPD8_Pos)  // P8
+			| (0x00UL << PORT_PUPD_PUPD7_Pos)  // P7
+			| (0x00UL << PORT_PUPD_PUPD6_Pos)  // P6
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PC->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR12_Pos) // P12
+			| (0x00UL << PORT_OUTDR_OUTDR11_Pos) // P11
+			| (0x00UL << PORT_OUTDR_OUTDR10_Pos) // P10
+			| (0x00UL << PORT_OUTDR_OUTDR9_Pos)  // P9
+			| (0x00UL << PORT_OUTDR_OUTDR8_Pos)  // P8
+			| (0x00UL << PORT_OUTDR_OUTDR7_Pos)  // P7
+			| (0x00UL << PORT_OUTDR_OUTDR6_Pos)  // P6
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	// PORT - D
+	PD->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE5_Pos)  // P5
+			| (0x01UL << PORT_MOD_MODE4_Pos)  // P4
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PD->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PD->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 :               , 2 : SS11/SS21     , 3 :               , 4 : ICOM6         
+			| (0x00UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 : BLNK          , 2 : SCK11/SCK21   , 3 :               , 4 : ICOM7         
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 : RXD11         , 2 : MISO11/MISO21 , 3 :               , 4 : ICOM8         
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 : TXD11         , 2 : MOSI11/MOSI21 , 3 :               , 4 : ICOM9         
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : SDA0          , 2 : EC10          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : SCL0          , 2 : SS20          , 3 :               , 4 :               
+			;
+
+	PD->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PD->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	// PORT - E
+	PE->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE15_Pos) // P15
+			| (0x01UL << PORT_MOD_MODE14_Pos) // P14
+			| (0x01UL << PORT_MOD_MODE13_Pos) // P13
+			| (0x01UL << PORT_MOD_MODE12_Pos) // P12
+			| (0x01UL << PORT_MOD_MODE11_Pos) // P11
+			| (0x01UL << PORT_MOD_MODE10_Pos) // P10
+			| (0x01UL << PORT_MOD_MODE9_Pos)  // P9
+			| (0x01UL << PORT_MOD_MODE8_Pos)  // P8
+			| (0x01UL << PORT_MOD_MODE7_Pos)  // P7
+			| (0x01UL << PORT_MOD_MODE6_Pos)  // P6
+			| (0x01UL << PORT_MOD_MODE5_Pos)  // P5
+			| (0x01UL << PORT_MOD_MODE4_Pos)  // P4
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PE->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP15_Pos) // P15
+			| (0x00UL << PORT_TYP_TYP14_Pos) // P14
+			| (0x00UL << PORT_TYP_TYP13_Pos) // P13
+			| (0x00UL << PORT_TYP_TYP12_Pos) // P12
+			| (0x00UL << PORT_TYP_TYP11_Pos) // P11
+			| (0x00UL << PORT_TYP_TYP10_Pos) // P10
+			| (0x00UL << PORT_TYP_TYP9_Pos)  // P9
+			| (0x00UL << PORT_TYP_TYP8_Pos)  // P8
+			| (0x00UL << PORT_TYP_TYP7_Pos)  // P7
+			| (0x00UL << PORT_TYP_TYP6_Pos)  // P6
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PE->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR7_Pos)  // P7  - 0 :               , 1 : T11O          , 2 : T11C          , 3 :               , 4 : ICOM5         
+			| (0x00UL << PORT_AFSR1_AFSR6_Pos)  // P6  - 0 :               , 1 : T10O          , 2 : T10C          , 3 :               , 4 : ICOM4         
+			| (0x02UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 : PWM30CB       , 2 : MOSI21        , 3 :               , 4 : ICOM3         
+			| (0x02UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 : PWM30CA       , 2 : MISO21        , 3 :               , 4 : ICOM2         
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 : PWM30BB       , 2 : SCK21         , 3 :               , 4 : ICOM1         
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 : PWM30BA       , 2 : SS21          , 3 :               , 4 : ICOM0         
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : PWM30AB       , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : PWM30AA       , 2 : SS11          , 3 :               , 4 :               
+			;
+
+	PE->AFSR2 = 0x00UL
+			| (0x00UL << PORT_AFSR2_AFSR15_Pos) // P15 - 0 :               , 1 :               , 2 : SS12          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR14_Pos) // P14 - 0 :               , 1 :               , 2 : SCK12         , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR13_Pos) // P13 - 0 :               , 1 : RXD12         , 2 : MISO12        , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR12_Pos) // P12 - 0 :               , 1 : TXD12         , 2 : MOSI12        , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR11_Pos) // P11 - 0 :               , 1 :               , 2 : SS13          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR10_Pos) // P10 - 0 :               , 1 :               , 2 : SCK13         , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR9_Pos)  // P9  - 0 :               , 1 : RXD13         , 2 : MISO13        , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR8_Pos)  // P8  - 0 :               , 1 : TXD13         , 2 : MOSI13        , 3 :               , 4 :               
+			;
+
+	PE->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD15_Pos) // P15
+			| (0x00UL << PORT_PUPD_PUPD14_Pos) // P14
+			| (0x00UL << PORT_PUPD_PUPD13_Pos) // P13
+			| (0x00UL << PORT_PUPD_PUPD12_Pos) // P12
+			| (0x00UL << PORT_PUPD_PUPD11_Pos) // P11
+			| (0x00UL << PORT_PUPD_PUPD10_Pos) // P10
+			| (0x00UL << PORT_PUPD_PUPD9_Pos)  // P9
+			| (0x00UL << PORT_PUPD_PUPD8_Pos)  // P8
+			| (0x00UL << PORT_PUPD_PUPD7_Pos)  // P7
+			| (0x00UL << PORT_PUPD_PUPD6_Pos)  // P6
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PE->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR15_Pos) // P15
+			| (0x00UL << PORT_OUTDR_OUTDR14_Pos) // P14
+			| (0x00UL << PORT_OUTDR_OUTDR13_Pos) // P13
+			| (0x00UL << PORT_OUTDR_OUTDR12_Pos) // P12
+			| (0x00UL << PORT_OUTDR_OUTDR11_Pos) // P11
+			| (0x00UL << PORT_OUTDR_OUTDR10_Pos) // P10
+			| (0x00UL << PORT_OUTDR_OUTDR9_Pos)  // P9
+			| (0x00UL << PORT_OUTDR_OUTDR8_Pos)  // P8
+			| (0x00UL << PORT_OUTDR_OUTDR7_Pos)  // P7
+			| (0x00UL << PORT_OUTDR_OUTDR6_Pos)  // P6
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	// PORT - F
+	PF->MOD = 0x00UL // 0 : Input Mode, 1 : Output Mode, 2 : Alternative function mode
+			| (0x01UL << PORT_MOD_MODE11_Pos) // P11
+			| (0x01UL << PORT_MOD_MODE10_Pos) // P10
+			| (0x01UL << PORT_MOD_MODE9_Pos)  // P9
+			| (0x01UL << PORT_MOD_MODE8_Pos)  // P8
+			| (0x01UL << PORT_MOD_MODE7_Pos)  // P7
+			| (0x01UL << PORT_MOD_MODE6_Pos)  // P6
+			| (0x01UL << PORT_MOD_MODE5_Pos)  // P5
+			| (0x01UL << PORT_MOD_MODE4_Pos)  // P4
+			| (0x01UL << PORT_MOD_MODE3_Pos)  // P3
+			| (0x01UL << PORT_MOD_MODE2_Pos)  // P2
+			| (0x01UL << PORT_MOD_MODE1_Pos)  // P1
+			| (0x01UL << PORT_MOD_MODE0_Pos)  // P0
+			;
+
+	PF->TYP = 0x00UL // 0 : Push-pull Output, 1 : Open-drain Output
+			| (0x00UL << PORT_TYP_TYP11_Pos) // P11
+			| (0x00UL << PORT_TYP_TYP10_Pos) // P10
+			| (0x00UL << PORT_TYP_TYP9_Pos)  // P9
+			| (0x00UL << PORT_TYP_TYP8_Pos)  // P8
+			| (0x00UL << PORT_TYP_TYP7_Pos)  // P7
+			| (0x00UL << PORT_TYP_TYP6_Pos)  // P6
+			| (0x00UL << PORT_TYP_TYP5_Pos)  // P5
+			| (0x00UL << PORT_TYP_TYP4_Pos)  // P4
+			| (0x00UL << PORT_TYP_TYP3_Pos)  // P3
+			| (0x00UL << PORT_TYP_TYP2_Pos)  // P2
+			| (0x00UL << PORT_TYP_TYP1_Pos)  // P1
+			| (0x00UL << PORT_TYP_TYP0_Pos)  // P0
+			;
+
+	PF->AFSR1 = 0x00UL
+			| (0x00UL << PORT_AFSR1_AFSR7_Pos)  // P7  - 0 :               , 1 : T30C          , 2 : SDA0          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR6_Pos)  // P6  - 0 :               , 1 : EC30          , 2 : SCL0          , 3 :               , 4 :               
+			| (0x02UL << PORT_AFSR1_AFSR5_Pos)  // P5  - 0 :               , 1 : BLNK          , 2 :               , 3 :               , 4 :               
+			| (0x02UL << PORT_AFSR1_AFSR4_Pos)  // P4  - 0 :               , 1 : CLKO          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR3_Pos)  // P3  - 0 :               , 1 : RXD1          , 2 :               , 3 : SXOUT         , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR2_Pos)  // P2  - 0 :               , 1 : TXD1          , 2 :               , 3 : SXIN          , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR1_Pos)  // P1  - 0 :               , 1 : SDA1          , 2 :               , 3 : XIN           , 4 :               
+			| (0x00UL << PORT_AFSR1_AFSR0_Pos)  // P0  - 0 :               , 1 : SCL1          , 2 :               , 3 : XOUT          , 4 :               
+			;
+
+	PF->AFSR2 = 0x00UL
+			| (0x00UL << PORT_AFSR2_AFSR11_Pos) // P11 - 0 :               , 1 : T14O          , 2 : T14C          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR10_Pos) // P10 - 0 :               , 1 : T13O          , 2 : T13C          , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR9_Pos)  // P9  - 0 :               , 1 : EC14          , 2 :               , 3 :               , 4 :               
+			| (0x00UL << PORT_AFSR2_AFSR8_Pos)  // P8  - 0 :               , 1 : EC13          , 2 :               , 3 :               , 4 :               
+			;
+
+	PF->PUPD = 0x00UL // 0 : Disable Pull-up/down, 1 : Enable Pull-up, 2 : Enable Pull-down
+			| (0x00UL << PORT_PUPD_PUPD11_Pos) // P11
+			| (0x00UL << PORT_PUPD_PUPD10_Pos) // P10
+			| (0x00UL << PORT_PUPD_PUPD9_Pos)  // P9
+			| (0x00UL << PORT_PUPD_PUPD8_Pos)  // P8
+			| (0x00UL << PORT_PUPD_PUPD7_Pos)  // P7
+			| (0x00UL << PORT_PUPD_PUPD6_Pos)  // P6
+			| (0x00UL << PORT_PUPD_PUPD5_Pos)  // P5
+			| (0x00UL << PORT_PUPD_PUPD4_Pos)  // P4
+			| (0x00UL << PORT_PUPD_PUPD3_Pos)  // P3
+			| (0x00UL << PORT_PUPD_PUPD2_Pos)  // P2
+			| (0x00UL << PORT_PUPD_PUPD1_Pos)  // P1
+			| (0x00UL << PORT_PUPD_PUPD0_Pos)  // P0
+			;
+
+	PF->OUTDR = 0x00UL // 0 : Output Low, 1 : Output High
+			| (0x00UL << PORT_OUTDR_OUTDR11_Pos) // P11
+			| (0x00UL << PORT_OUTDR_OUTDR10_Pos) // P10
+			| (0x00UL << PORT_OUTDR_OUTDR9_Pos)  // P9
+			| (0x00UL << PORT_OUTDR_OUTDR8_Pos)  // P8
+			| (0x00UL << PORT_OUTDR_OUTDR7_Pos)  // P7
+			| (0x00UL << PORT_OUTDR_OUTDR6_Pos)  // P6
+			| (0x00UL << PORT_OUTDR_OUTDR5_Pos)  // P5
+			| (0x00UL << PORT_OUTDR_OUTDR4_Pos)  // P4
+			| (0x00UL << PORT_OUTDR_OUTDR3_Pos)  // P3
+			| (0x00UL << PORT_OUTDR_OUTDR2_Pos)  // P2
+			| (0x00UL << PORT_OUTDR_OUTDR1_Pos)  // P1
+			| (0x00UL << PORT_OUTDR_OUTDR0_Pos)  // P0
+			;
+
+	PORT_ACCESS_DIS(); // disable writing permittion of ALL PCU register
+}
+
+/* --------------------------------- End Of File ------------------------------ */
+

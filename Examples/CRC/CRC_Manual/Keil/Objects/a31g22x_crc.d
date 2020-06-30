@@ -1,0 +1,11 @@
+.\objects\a31g22x_crc.o: ..\..\..\..\Drivers\source\A31G22x_crc.c
+.\objects\a31g22x_crc.o: ..\..\..\..\Drivers\include\A31G22x_scu.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\Device\ABOV\A31G22x\Include\A31G22x.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\CMSIS\Include\core_cm0plus.h
+.\objects\a31g22x_crc.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\CMSIS\Include\core_cmInstr.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\CMSIS\Include\cmsis_armcc.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\CMSIS\Include\core_cmFunc.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Core\Device\ABOV\A31G22x\Include\system_A31G22x.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Drivers\include\aa_types.h
+.\objects\a31g22x_crc.o: ..\..\..\..\Drivers\include\A31G22x_crc.h
