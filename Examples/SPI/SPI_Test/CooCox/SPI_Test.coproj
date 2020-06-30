@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Project version="2G - 2.0.5" name="SPI_Test">
+  <Target name="SPI_Test" isCurrent="1">
+    <Device manufacturerId="1" manufacturerName="ARM" chipId="395" chipName="M3" boardId="" boardName="" boardUrl="" coreId="" coreName=""/>
+    <BuildOption>
+      <Compile>
+        <Option name="OptimizationLevel" value="0"/>
+        <Option name="UseFPU" value="0"/>
+        <Option name="UserEditCompiler" value=""/>
+        <Option name="SupportCPlusplus" value="0"/>
+        <Option name="DEBUG" value="2"/>
+        <Option name="WARNING" value="1"/>
+        <Includepaths>
+          <Includepath path="."/>
+          <Includepath path=".."/>
+          <Includepath path="../../../../core/cmsis/include"/>
+          <Includepath path="../../../../core/device/abov/a33g52x/include"/>
+          <Includepath path="../../../../drivers/include"/>
+          <Includepath path="../../../../core/device/abov/a33g52x/source"/>
+          <Includepath path="../../../../core/device/abov/a33g52x/source/arm"/>
+        </Includepaths>
+        <DefinedSymbols>
+          <Define name="M3"/>
+          <Define name="A33G52x"/>
+        </DefinedSymbols>
+      </Compile>
+      <Link useDefault="0">
+        <Option name="DiscardUnusedSection" value="0"/>
+        <Option name="UserEditLinkder" value=""/>
+        <Option name="UseMemoryLayout" value="1"/>
+        <Option name="nostartfiles" value="0"/>
+        <Option name="LTO" value="0"/>
+        <Option name="IsNewStartupCode" value="1"/>
+        <LinkedLibraries/>
+        <MemoryAreas debugInFlashNotRAM="1">
+          <Memory name="IROM1" type="ReadOnly" size="0x00060000" startValue="0x00000000"/>
+          <Memory name="IRAM1" type="ReadWrite" size="0x00006000" startValue="0x20000000"/>
+          <Memory name="IROM2" type="ReadOnly" size="" startValue=""/>
+          <Memory name="IRAM2" type="ReadWrite" size="" startValue=""/>
+        </MemoryAreas>
+        <LocateLinkFile path="../../../../../../appdata/roaming/coocox/coide/configuration/programdata/spi_test/link.ld" type="0"/>
+      </Link>
+      <Output>
+        <Option name="OutputFileType" value="0"/>
+        <Option name="Path" value="./"/>
+        <Option name="Name" value="SPI_Test"/>
+        <Option name="HEX" value="1"/>
+        <Option name="BIN" value="1"/>
+      </Output>
+      <User>
+        <UserRun name="Run#1" type="Before" checked="0" value=""/>
+        <UserRun name="Run#1" type="After" checked="0" value=""/>
+      </User>
+    </BuildOption>
+    <DebugOption>
+      <Option name="org.coocox.codebugger.gdbjtag.core.adapter" value="CMSIS-DAP"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.debugMode" value="SWD"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.clockDiv" value="2M"/>
+      <Option name="org.coocox.codebugger.gdbjtag.corerunToMain" value="1"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.jlinkgdbserver" value="D:\Program Files (x86)\SEGGER\JLink_V490e\JLinkGDBServerCL.exe"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.userDefineGDBScript" value=""/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.targetEndianess" value="0"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.jlinkResetMode" value="Type 0: Normal"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.resetMode" value="VECTRESET"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.ifSemihost" value="0"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.ifCacheRom" value="0"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.ipAddress" value="127.0.0.1"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.portNumber" value="2009"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.autoDownload" value="1"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.verify" value="1"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.downloadFuction" value="Erase Effected"/>
+      <Option name="org.coocox.codebugger.gdbjtag.core.defaultAlgorithm" value="../../../../../../desktop/a33g52x/flashloader/coocox/a33g527_384kb_flashloader.elf"/>
+    </DebugOption>
+    <ExcludeFile/>
+  </Target>
+  <Components path="./"/>
+  <LocalComponents/>
+  <Files>
+    <File name="Drivers/a33g52x_pcu.c" path="../../../../Drivers/Source/a33g52x_pcu.c" type="1"/>
+    <File name="Drivers/slib.c" path="../../../../Drivers/Source/slib.c" type="1"/>
+    <File name="CMSIS-CM3" path="" type="2"/>
+    <File name="Drivers/a33g52x_i2c.c" path="../../../../Drivers/Source/a33g52x_i2c.c" type="1"/>
+    <File name="StartUp" path="" type="2"/>
+    <File name="Drivers/a33g52x_frt.c" path="../../../../Drivers/Source/a33g52x_frt.c" type="1"/>
+    <File name="Main/IRQ_Handler.c" path="../IRQ_Handler.c" type="1"/>
+    <File name="Drivers/a33g52x_nvic.c" path="../../../../Drivers/Source/a33g52x_nvic.c" type="1"/>
+    <File name="Drivers/console.c" path="../../../../Drivers/Source/console.c" type="1"/>
+    <File name="Drivers/a33g52x_gpio.c" path="../../../../Drivers/Source/a33g52x_gpio.c" type="1"/>
+    <File name="Drivers" path="" type="2"/>
+    <File name="StartUp/startup_A33G52x.c" path="../../../../Core/Device/ABOV/A33G52x/Source/GCC/startup_A33G52x.c" type="1"/>
+    <File name="Drivers/a33g52x_wdt.c" path="../../../../Drivers/Source/a33g52x_wdt.c" type="1"/>
+    <File name="Drivers/a33g52x_uart.c" path="../../../../Drivers/Source/a33g52x_uart.c" type="1"/>
+    <File name="Main/main.c" path="../main.c" type="1"/>
+    <File name="Drivers/a33g52x_timer.c" path="../../../../Drivers/Source/a33g52x_timer.c" type="1"/>
+    <File name="Drivers/a33g52x_spi.c" path="../../../../Drivers/Source/a33g52x_spi.c" type="1"/>
+    <File name="Main" path="" type="2"/>
+    <File name="CMSIS-CM3/system_A33G52x.c" path="../../../../Core/Device/ABOV/A33G52x/Source/system_A33G52x.c" type="1"/>
+    <File name="Drivers/a33g52x_pwm.c" path="../../../../Drivers/Source/a33g52x_pwm.c" type="1"/>
+    <File name="Drivers/a33g52x_pmu.c" path="../../../../Drivers/Source/a33g52x_pmu.c" type="1"/>
+    <File name="Drivers/a33g52x_flash.c" path="../../../../Drivers/Source/a33g52x_flash.c" type="1"/>
+    <File name="Drivers/a33g52x_adc.c" path="../../../../Drivers/Source/a33g52x_adc.c" type="1"/>
+  </Files>
+  <Bookmarks/>
+</Project>

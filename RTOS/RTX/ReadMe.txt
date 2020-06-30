@@ -1,0 +1,1 @@
+CMSIS-RTOS RTx libraries are refered from "C:\Keil_v5\ARM\PACK\ARM\5.3.0\CMSIS\RTOS\RTX" directory.

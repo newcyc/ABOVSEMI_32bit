@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<flash_device>
+  <exe>$TOOLKIT_DIR$\config\flashloader\ABOV\FlashA33G527.out</exe>
+  <page>384</page>
+  <block>384 0x400</block>
+  <flash_base>0x00000000</flash_base>
+  <aggregate>1</aggregate>
+</flash_device>
