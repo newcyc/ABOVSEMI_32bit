@@ -1,0 +1,13 @@
+Dependencies for Project 'arm_cortexM4lf_dotproduct_example', Target 'Target 1': (DO NOT MODIFY !)
+F (..\arm_dotproduct_example_f32.c)(0x53462B88)(-c --cpu Cortex-M4.fp --li -g -O0 --apcs=interwork -I..\..\..\..\Include -I..\..\..\..\..\Device\ARM\ARMCM4\Include -I..\..\..\Common\Include-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DARM_MATH_CM4 -D__FPU_PRESENT="1"-o .\debug\arm_dotproduct_example_f32.o --omf_browse .\debug\arm_dotproduct_example_f32.crf --depend .\debug\arm_dotproduct_example_f32.d)
+I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x5475E4EE)
+I (..\..\..\..\Include\arm_math.h)(0x5594F4AF)
+I (..\..\..\..\Include\core_cm4.h)(0x5594F4AF)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x59140F50)
+I (..\..\..\..\Include\core_cmInstr.h)(0x5594F4AF)
+I (..\..\..\..\Include\core_cmFunc.h)(0x5594F4AF)
+I (..\..\..\..\Include\core_cmSimd.h)(0x5594F4AF)
+I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x5475E4F0)
+F (..\..\Common\ARM\startup_ARMCM4.s)(0x00000000)(--cpu Cortex-M4.fp --li -g --apcs=interwork -I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\CMSIS\Include--pd "__UVISION_VERSION SETA 513"--list .\debug\startup_armcm4.lst --xref -o .\debug\startup_armcm4.o --depend .\debug\startup_armcm4.d)
+F (..\..\Common\system_ARMCM4.c)(0x00000000)(-c --cpu Cortex-M4.fp --li -g -O0 --apcs=interwork -I..\..\..\..\Include -I..\..\..\..\..\Device\ARM\ARMCM4\Include -I..\..\..\Common\Include-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DARM_MATH_CM4 -D__FPU_PRESENT="1"-o .\debug\system_armcm4.o --omf_browse .\debug\system_armcm4.crf --depend .\debug\system_armcm4.d)
+F (..\..\..\..\Lib\ARM\arm_cortexM4lf_math.lib)(0x53462B70)()
