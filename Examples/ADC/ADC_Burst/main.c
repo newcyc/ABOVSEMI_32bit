@@ -4,7 +4,7 @@
 * 			support for PCU firmware library
 * @version	1.0
 * @date		
-* @author	ABOV M team
+* @author	ABOV Application team
 *
 * Copyright(C) 2017, ABOV Semiconductor
 * All rights reserved.
